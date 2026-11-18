@@ -1,16 +1,8 @@
 import { NestFactory } from '@nestjs/core';
-import { NestNodeApplication, NodeAdapter } from '@nestjs/platform-node';
-import { AppModule, ObserveInstrument } from './app.module.js';
+import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestNodeApplication>(
-    AppModule,
-    new NodeAdapter(),
-    {
-      instrument: ObserveInstrument,
-    },
-  );
-
-  await app.listen(process.env.PORT ?? 3000);
+  const app = await NestFactory.createApplicationContext(AppModule);
+  app.enableShutdownHooks();
 }
-await bootstrap();
+bootstrap();

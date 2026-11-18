@@ -1,0 +1,62 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum EstadoComprobante {
+  OK
+  REVISAR
+  DESCARTADO
+}
+
+enum Origen {
+  QR // datos leídos del código QR de ARCA
+  MANUAL // datos escritos por el sujeto en el pie de la foto
+}
+
+model Comprobante {
+  id             Int               @id @default(autoincrement())
+  estado         EstadoComprobante @default(REVISAR)
+  origen         Origen?
+  motivoRevision String? // ej: "QR no legible", "Falta el importe"
+
+  // Datos del comprobante (null si no se pudieron leer)
+  fechaEmision    DateTime?
+  emisorCuit      String?
+  emisorNombre    String? // solo si el sujeto lo escribió a mano
+  tipoComprobante Int? // código ARCA (1 = A, 6 = B, 11 = C...)
+  puntoVenta      Int?
+  numero          Int?
+  cae             String?
+  moneda          String    @default("PES")
+
+  // Importes en centavos
+  total       BigInt?
+  netoGravado BigInt? // opcional: a mano o en una etapa posterior
+  iva         BigInt? // opcional: a mano o en una etapa posterior
+
+  // Archivo original (foto o PDF)
+  archivoNombre String?
+  archivoMime   String
+  archivoBytes  Int
+  archivoHash   String  @unique // SHA-256: evita cargar el mismo archivo dos veces
+  archivoRuta   String
+
+  qrRaw     String? // JSON del QR tal cual, para auditar
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([emisorCuit, tipoComprobante, puntoVenta, numero])
+  @@index([fechaEmision])
+  @@index([estado])
+}
